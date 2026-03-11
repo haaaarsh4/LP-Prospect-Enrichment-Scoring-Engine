@@ -1,0 +1,2 @@
+run_id,started_at,finished_at,total_prospects,processed,skipped_cached,total_tokens_in,total_tokens_out,total_cost_usd,status
+run_20260311_191010,2026-03-11T19:10:10.948776,2026-03-11T19:17:33.867427,99,70,0,75715,24998,0.0,complete
