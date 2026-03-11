@@ -2,6 +2,8 @@
 
 > *An enrichment and scoring pipeline that helps fund managers find, understand, and prioritize their best LP prospects, powered by LLaMA 3.3 on Groq.*
 
+**Live demo: [lp-prospect-enrichment-scoring-engine.onrender.com](https://lp-prospect-enrichment-scoring-engine.onrender.com)**
+
 ---
 
 ## What This Is
