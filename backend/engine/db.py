@@ -6,6 +6,7 @@ from model import EnrichmentResult, ScoredProspect
 from config import DB_PATH
 import hashlib
 
+
 def init_db(db_path: str = DB_PATH):
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
@@ -64,7 +65,9 @@ def init_db(db_path: str = DB_PATH):
         data_quality     TEXT,
 
         run_id           TEXT,
-        created_at       TEXT DEFAULT CURRENT_TIMESTAMP
+        created_at       TEXT DEFAULT CURRENT_TIMESTAMP,
+
+        UNIQUE(contact_name, organization)
     )
     """)
 
@@ -81,6 +84,27 @@ def init_db(db_path: str = DB_PATH):
         total_cost_usd   REAL,
         status           TEXT
     )
+    """)
+
+    cur.execute("""
+        CREATE INDEX IF NOT EXISTS idx_sp_composite
+        ON scored_prospects (composite_score DESC)
+    """)
+    cur.execute("""
+        CREATE INDEX IF NOT EXISTS idx_sp_tier
+        ON scored_prospects (tier)
+    """)
+    cur.execute("""
+        CREATE INDEX IF NOT EXISTS idx_sp_org
+        ON scored_prospects (organization)
+    """)
+    cur.execute("""
+        CREATE INDEX IF NOT EXISTS idx_sp_region
+        ON scored_prospects (region)
+    """)
+    cur.execute("""
+        CREATE INDEX IF NOT EXISTS idx_sp_org_type
+        ON scored_prospects (org_type)
     """)
 
     conn.commit()
@@ -115,22 +139,29 @@ def cache_enrichment(conn, result: EnrichmentResult):
 
 
 def upsert_scored_prospect(conn, sp: ScoredProspect, run_id: str):
-    # Remove existing for this contact+org (re-run support)
-    conn.execute(
-        "DELETE FROM scored_prospects WHERE contact_name=? AND organization=?",
-        (sp.contact_name, sp.organization),
-    )
+    """
+    Insert or replace a scored prospect row.
+
+    BUG FIXED: previously `run_id` was added to dict `d` AND then appended
+    again to `cols`/`vals`, producing a duplicate-column SQL error on every insert.
+    Now `run_id` is injected once via a clean parameter, and the SQL uses
+    ON CONFLICT REPLACE so we don't need a separate DELETE statement.
+    """
     d = asdict(sp)
-    d["is_lp"] = int(d["is_lp"])
-    d["sustainability_mandate"] = int(d["sustainability_mandate"])
-    d["private_credit_allocation"] = int(d["private_credit_allocation"])
-    d["emerging_manager_program"] = int(d["emerging_manager_program"])
-    d["run_id"] = run_id
+
+    for bool_field in ("is_lp", "sustainability_mandate",
+                       "private_credit_allocation", "emerging_manager_program"):
+        if bool_field in d:
+            d[bool_field] = int(bool(d[bool_field]))
+
     cols = list(d.keys()) + ["run_id"]
-    vals = [d[c] if c != "run_id" else run_id for c in list(d.keys())] + [run_id]
-    placeholders = ", ".join(["?" for _ in cols])
-    col_str = ", ".join(cols)
+    vals = list(d.values()) + [run_id]
+
+    placeholders = ", ".join(["?"] * len(cols))
+    col_str      = ", ".join(cols)
+
     conn.execute(
-        f"INSERT INTO scored_prospects ({col_str}) VALUES ({placeholders})", vals
+        f"INSERT OR REPLACE INTO scored_prospects ({col_str}) VALUES ({placeholders})",
+        vals,
     )
     conn.commit()
