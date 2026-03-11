@@ -1,15 +1,21 @@
-import sqlite3
+import os
+import psycopg2
+import psycopg2.extras
 import json
 from typing import Optional
 from dataclasses import asdict
 from model import EnrichmentResult, ScoredProspect
-from config import DB_PATH
 import hashlib
 
 
-def init_db(db_path: str = DB_PATH):
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
+def get_conn():
+    conn = psycopg2.connect(os.environ["DATABASE_URL"])
+    psycopg2.extras.register_default_jsonb(conn)
+    return conn
+
+
+def init_db(db_path: str = None):
+    conn = get_conn()
     cur = conn.cursor()
 
     cur.execute("""
@@ -24,7 +30,7 @@ def init_db(db_path: str = DB_PATH):
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS scored_prospects (
-        id               INTEGER PRIMARY KEY AUTOINCREMENT,
+        id               SERIAL PRIMARY KEY,
         contact_name     TEXT NOT NULL,
         organization     TEXT NOT NULL,
         org_type         TEXT,
@@ -86,28 +92,14 @@ def init_db(db_path: str = DB_PATH):
     )
     """)
 
-    cur.execute("""
-        CREATE INDEX IF NOT EXISTS idx_sp_composite
-        ON scored_prospects (composite_score DESC)
-    """)
-    cur.execute("""
-        CREATE INDEX IF NOT EXISTS idx_sp_tier
-        ON scored_prospects (tier)
-    """)
-    cur.execute("""
-        CREATE INDEX IF NOT EXISTS idx_sp_org
-        ON scored_prospects (organization)
-    """)
-    cur.execute("""
-        CREATE INDEX IF NOT EXISTS idx_sp_region
-        ON scored_prospects (region)
-    """)
-    cur.execute("""
-        CREATE INDEX IF NOT EXISTS idx_sp_org_type
-        ON scored_prospects (org_type)
-    """)
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_sp_composite ON scored_prospects (composite_score DESC)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_sp_tier ON scored_prospects (tier)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_sp_org ON scored_prospects (organization)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_sp_region ON scored_prospects (region)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_sp_org_type ON scored_prospects (org_type)")
 
     conn.commit()
+    cur.close()
     return conn
 
 
@@ -117,51 +109,52 @@ def org_key(organization: str) -> str:
 
 def get_cached_enrichment(conn, organization: str) -> Optional[EnrichmentResult]:
     key = org_key(organization)
-    row = conn.execute(
-        "SELECT enrichment_json FROM org_enrichment WHERE org_key = ?", (key,)
-    ).fetchone()
+    cur = conn.cursor()
+    cur.execute("SELECT enrichment_json FROM org_enrichment WHERE org_key = %s", (key,))
+    row = cur.fetchone()
+    cur.close()
     if row:
-        data = json.loads(row["enrichment_json"])
+        data = json.loads(row[0])
         return EnrichmentResult(**data)
     return None
 
 
 def cache_enrichment(conn, result: EnrichmentResult):
     key = org_key(result.organization)
-    conn.execute(
-        """INSERT OR REPLACE INTO org_enrichment
-           (org_key, organization, org_type, enrichment_json, enriched_at)
-           VALUES (?, ?, ?, ?, ?)""",
-        (key, result.organization, result.org_type,
-         json.dumps(asdict(result)), result.enriched_at),
+    cur = conn.cursor()
+    cur.execute(
+        """INSERT INTO org_enrichment (org_key, organization, org_type, enrichment_json, enriched_at)
+           VALUES (%s, %s, %s, %s, %s)
+           ON CONFLICT (org_key) DO UPDATE SET
+               organization = EXCLUDED.organization,
+               org_type = EXCLUDED.org_type,
+               enrichment_json = EXCLUDED.enrichment_json,
+               enriched_at = EXCLUDED.enriched_at""",
+        (key, result.organization, result.org_type, json.dumps(asdict(result)), result.enriched_at),
     )
     conn.commit()
+    cur.close()
 
 
 def upsert_scored_prospect(conn, sp: ScoredProspect, run_id: str):
-    """
-    Insert or replace a scored prospect row.
-
-    BUG FIXED: previously `run_id` was added to dict `d` AND then appended
-    again to `cols`/`vals`, producing a duplicate-column SQL error on every insert.
-    Now `run_id` is injected once via a clean parameter, and the SQL uses
-    ON CONFLICT REPLACE so we don't need a separate DELETE statement.
-    """
     d = asdict(sp)
 
-    for bool_field in ("is_lp", "sustainability_mandate",
-                       "private_credit_allocation", "emerging_manager_program"):
+    for bool_field in ("is_lp", "sustainability_mandate", "private_credit_allocation", "emerging_manager_program"):
         if bool_field in d:
             d[bool_field] = int(bool(d[bool_field]))
 
     cols = list(d.keys()) + ["run_id"]
     vals = list(d.values()) + [run_id]
 
-    placeholders = ", ".join(["?"] * len(cols))
-    col_str      = ", ".join(cols)
+    placeholders = ", ".join(["%s"] * len(cols))
+    col_str = ", ".join(cols)
+    update_str = ", ".join(f"{c} = EXCLUDED.{c}" for c in cols if c not in ("contact_name", "organization"))
 
-    conn.execute(
-        f"INSERT OR REPLACE INTO scored_prospects ({col_str}) VALUES ({placeholders})",
+    cur = conn.cursor()
+    cur.execute(
+        f"""INSERT INTO scored_prospects ({col_str}) VALUES ({placeholders})
+            ON CONFLICT (contact_name, organization) DO UPDATE SET {update_str}""",
         vals,
     )
     conn.commit()
+    cur.close()
