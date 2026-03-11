@@ -1,0 +1,1756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PaceZero — LP Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0a0a0a;
+  --bg1:      #101010;
+  --bg2:      #161616;
+  --border:   rgba(255,255,255,0.06);
+  --border2:  rgba(255,255,255,0.1);
+  --text:     #e8e4dd;
+  --muted:    rgba(232,228,221,0.45);
+  --faint:    rgba(232,228,221,0.18);
+  --accent:   #9ab3c2;
+  --accent2:  #b8cdd8;
+  --red:      #e07070;
+  --blue:     #7aaed4;
+  --green:    #7ac4a0;
+  --sidebar:  200px;
+  --topbar:   52px;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── SCROLLBAR ─────────────────────────────────── */
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); }
+
+/* ── SHELL ─────────────────────────────────────── */
+.shell {
+  display: grid;
+  grid-template-columns: var(--sidebar) 1fr;
+  grid-template-rows: var(--topbar) 1fr;
+  min-height: 100vh;
+}
+
+/* ── TOPBAR ─────────────────────────────────────── */
+.topbar {
+  grid-column: 1 / -1;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 32px;
+  gap: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.logo-name {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  font-size: 20px;
+  letter-spacing: 0.06em;
+  color: var(--text);
+}
+
+.logo-div {
+  width: 1px;
+  height: 14px;
+  background: var(--border2);
+  margin: 0 16px;
+  align-self: center;
+}
+
+.logo-sub {
+  font-size: 11px;
+  color: rgba(232,228,221,0.4);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.status-live {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: rgba(232,228,221,0.35);
+  letter-spacing: 0.08em;
+}
+
+.live-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+.topbar-run {
+  font-size: 11px;
+  color: rgba(232,228,221,0.35);
+  letter-spacing: 0.05em;
+}
+.topbar-run b { color: rgba(232,228,221,0.6); font-weight: 400; }
+
+/* ── SIDEBAR ─────────────────────────────────────── */
+.sidebar {
+  background: var(--bg1);
+  border-right: 1px solid var(--border);
+  padding: 32px 0;
+  position: sticky;
+  top: var(--topbar);
+  height: calc(100vh - var(--topbar));
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-group { margin-bottom: 32px; }
+
+.nav-label {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(232,228,221,0.28);
+  padding: 0 24px 10px;
+}
+
+.nav-item {
+  display: block;
+  padding: 9px 24px;
+  font-size: 13px;
+  color: rgba(232,228,221,0.6);
+  cursor: pointer;
+  transition: color 0.15s;
+  letter-spacing: 0.02em;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  position: relative;
+}
+
+.nav-item::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 50%; transform: translateY(-50%);
+  width: 2px;
+  height: 0;
+  background: var(--accent);
+  transition: height 0.2s;
+}
+
+.nav-item:hover { color: var(--text); }
+.nav-item.active { color: var(--text); }
+.nav-item.active::before { height: 16px; }
+
+.nav-count {
+  float: right;
+  font-size: 10px;
+  color: var(--faint);
+}
+
+.nav-item.active .nav-count { color: var(--accent); }
+
+.sidebar-foot {
+  margin-top: auto;
+  padding: 20px 24px 0;
+  border-top: 1px solid var(--border);
+}
+
+.cost-block { }
+
+.cost-lbl {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(232,228,221,0.35);
+  margin-bottom: 6px;
+}
+
+.cost-val {
+  font-family: 'Outfit', sans-serif;
+  font-size: 26px;
+  font-weight: 300;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.cost-sub {
+  font-size: 11px;
+  color: rgba(232,228,221,0.3);
+  margin-top: 4px;
+}
+
+/* ── MAIN ─────────────────────────────────────────── */
+.main {
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.page { display: none; padding: 40px 40px 60px; animation: fadeIn 0.25s ease; }
+.page.active { display: block; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── PAGE HEADER ─────────────────────────────────── */
+.page-hed {
+  margin-bottom: 40px;
+}
+
+.page-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 32px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--text);
+}
+
+.page-title em {
+  font-style: normal;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.page-sub {
+  font-size: 12px;
+  color: rgba(232,228,221,0.38);
+  margin-top: 6px;
+  letter-spacing: 0.04em;
+}
+
+/* ── KPI ROW ─────────────────────────────────────── */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  margin-bottom: 40px;
+}
+
+.kpi {
+  background: var(--bg);
+  padding: 22px 24px;
+  transition: background 0.2s;
+}
+
+.kpi:hover { background: var(--bg1); }
+
+.kpi-lbl {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(232,228,221,0.5);
+  margin-bottom: 10px;
+}
+
+.kpi-val {
+  font-family: 'Outfit', sans-serif;
+  font-size: 36px;
+  font-weight: 300;
+  line-height: 1;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.kpi-val.a { color: var(--text); }
+.kpi-val.b { color: var(--text); }
+.kpi-val.g { color: var(--text); }
+
+.kpi-sub {
+  font-size: 11px;
+  color: rgba(232,228,221,0.35);
+  margin-top: 5px;
+}
+
+/* ── TIERS ROW ───────────────────────────────────── */
+.tiers-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.tier-card {
+  border: 1px solid var(--border);
+  padding: 20px 22px;
+  background: var(--bg1);
+  transition: border-color 0.2s;
+}
+
+.tier-card:hover { border-color: var(--border2); }
+
+.tier-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.tier-pip {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.tier-card.p .tier-pip { background: var(--green); }
+.tier-card.s .tier-pip { background: var(--blue); }
+.tier-card.m .tier-pip { background: var(--accent); }
+.tier-card.w .tier-pip { background: var(--faint); }
+
+.tier-name {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(232,228,221,0.55);
+}
+
+.tier-num {
+  font-family: 'Outfit', sans-serif;
+  font-size: 44px;
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.tier-card.p .tier-num { color: var(--text); }
+.tier-card.s .tier-num { color: var(--text); }
+.tier-card.m .tier-num { color: var(--text); }
+.tier-card.w .tier-num { color: rgba(232,228,221,0.35); }
+
+.tier-track {
+  margin-top: 14px;
+  height: 1px;
+  background: var(--border);
+  position: relative;
+}
+
+.tier-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tier-card.p .tier-fill { background: var(--green); }
+.tier-card.s .tier-fill { background: var(--blue); }
+.tier-card.m .tier-fill { background: var(--accent); }
+.tier-card.w .tier-fill { background: var(--faint); }
+
+/* ── TWO-COL ROW ─────────────────────────────────── */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.three-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+/* ── PANEL ───────────────────────────────────────── */
+.panel {
+  border: 1px solid var(--border);
+  background: var(--bg1);
+}
+
+.panel-head {
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(232,228,221,0.5);
+}
+
+.panel-body { padding: 20px 22px; }
+
+/* ── BAR ROWS ────────────────────────────────────── */
+.bar-rows { display: flex; flex-direction: column; gap: 16px; }
+
+.bar-item {
+  display: grid;
+  align-items: center;
+  gap: 14px;
+}
+
+.bar-item.with-val { grid-template-columns: 1fr 80px 36px; }
+.bar-item.dist     { grid-template-columns: 40px 1fr 32px; }
+.bar-item.region   { grid-template-columns: 1fr 36px; }
+
+.bar-lbl { font-size: 13px; color: rgba(232,228,221,0.75); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-lbl.dist-lbl { font-size: 12px; color: rgba(232,228,221,0.45); text-align: right; }
+
+.bar-track {
+  height: 1px;
+  background: var(--border);
+  position: relative;
+}
+
+.bar-track.h { height: 16px; }
+
+.bar-track-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: var(--accent);
+  transition: width 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0.7;
+}
+
+.bar-track-fill.thin {
+  top: 50%;
+  transform: translateY(-50%);
+  height: 1px;
+}
+
+.bar-num { font-size: 13px; color: rgba(232,228,221,0.65); text-align: right; }
+.bar-num.a { color: var(--text); }
+
+/* ── TOP TABLE ───────────────────────────────────── */
+.top-table-wrap {
+  border: 1px solid var(--border);
+  background: var(--bg1);
+  margin-bottom: 0;
+}
+
+/* ── TABLE BASE ──────────────────────────────────── */
+.t-wrap {
+  border: 1px solid var(--border);
+  background: var(--bg1);
+}
+
+table { width: 100%; border-collapse: collapse; }
+
+thead tr { border-bottom: 1px solid var(--border); }
+
+th {
+  padding: 13px 18px;
+  text-align: left;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(232,228,221,0.45);
+  font-weight: 400;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s;
+  background: var(--bg1);
+}
+
+th:hover { color: rgba(232,228,221,0.7); }
+th.sorted { color: var(--accent); }
+
+tbody tr { border-bottom: 1px solid var(--border); transition: background 0.12s; cursor: pointer; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--bg2); }
+
+td {
+  padding: 14px 18px;
+  font-size: 13px;
+  color: rgba(232,228,221,0.65);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+td.primary { color: var(--text); white-space: normal; vertical-align: top; padding-top: 14px; }
+td.org { max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+td.run-id { font-size: 12px; color: rgba(232,228,221,0.55); max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── BADGES ──────────────────────────────────────── */
+.t-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid;
+}
+
+.t-badge.p { border-color: rgba(122,196,160,0.3); color: var(--green); }
+.t-badge.s { border-color: rgba(122,174,212,0.3); color: var(--blue); }
+.t-badge.m { border-color: rgba(201,164,110,0.3); color: var(--accent); }
+.t-badge.w { border-color: var(--border); color: rgba(232,228,221,0.3); }
+
+.s-pill {
+  display: inline-block;
+  font-size: 14px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 400;
+  min-width: 36px;
+  text-align: right;
+  letter-spacing: 0;
+  color: var(--text);
+}
+
+.s-pill.hi { color: var(--text); }
+.s-pill.md { color: rgba(232,228,221,0.75); }
+.s-pill.lo { color: rgba(232,228,221,0.35); }
+
+/* ── PAGINATION ──────────────────────────────────── */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+}
+
+.pager-info { font-size: 12px; color: rgba(232,228,221,0.4); }
+.pager-info b { color: rgba(232,228,221,0.65); font-weight: 400; }
+
+.pager-btns { display: flex; gap: 4px; }
+
+.pager-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: rgba(232,228,221,0.55);
+  cursor: pointer;
+  font-size: 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  transition: all 0.12s;
+}
+
+.pager-btn:hover { border-color: var(--border2); color: var(--text); }
+.pager-btn.active { border-color: var(--accent); color: var(--text); background: rgba(154,179,194,0.08); }
+.pager-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+
+/* ── TOOLBAR ─────────────────────────────────────── */
+.toolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.s-wrap { position: relative; flex: 1; min-width: 200px; }
+
+.s-ico {
+  position: absolute;
+  left: 12px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--faint);
+  pointer-events: none;
+  font-size: 12px;
+}
+
+.s-inp {
+  width: 100%;
+  background: var(--bg1);
+  border: 1px solid var(--border);
+  padding: 9px 12px 9px 36px;
+  color: var(--text);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+  letter-spacing: 0.01em;
+}
+
+.s-inp:focus { border-color: var(--accent); }
+.s-inp::placeholder { color: rgba(232,228,221,0.3); }
+
+.f-sel {
+  background: var(--bg1);
+  border: 1px solid var(--border);
+  padding: 9px 12px;
+  color: rgba(232,228,221,0.6);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  min-width: 130px;
+}
+
+.f-sel:focus { border-color: var(--accent); }
+
+.btn-clear {
+  background: transparent;
+  border: 1px solid var(--border);
+  padding: 9px 16px;
+  color: rgba(232,228,221,0.4);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.04em;
+}
+
+.btn-clear:hover { border-color: var(--border2); color: rgba(232,228,221,0.7); }
+
+/* ── MODAL ───────────────────────────────────────── */
+.modal-bd {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(8px);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.modal-bd.open { display: flex; }
+
+.modal {
+  background: var(--bg1);
+  border: 1px solid var(--border2);
+  width: 100%;
+  max-width: 680px;
+  max-height: 88vh;
+  overflow-y: auto;
+  animation: modalIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-top {
+  padding: 28px 32px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.modal-name {
+  font-family: 'Outfit', sans-serif;
+  font-size: 26px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+.modal-org { font-size: 11px; color: var(--faint); margin-top: 4px; letter-spacing: 0.05em; }
+
+.modal-x {
+  background: transparent;
+  border: 1px solid var(--border);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--faint);
+  font-size: 14px;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  margin-left: 20px;
+}
+
+.modal-x:hover { border-color: var(--border2); color: var(--muted); }
+
+.modal-body { padding: 28px 32px; }
+
+.modal-hero {
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
+  margin-bottom: 28px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.hero-score {
+  font-family: 'Outfit', sans-serif;
+  font-size: 56px;
+  font-weight: 200;
+  line-height: 1;
+  color: var(--text);
+  letter-spacing: -0.03em;
+}
+
+.hero-info { flex: 1; }
+.hero-lbl { font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--faint); margin-bottom: 6px; }
+.hero-tier { margin-bottom: 10px; }
+
+.hero-check { }
+.hero-check-lbl { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--faint); margin-bottom: 4px; }
+.hero-check-val {
+  font-family: 'Outfit', sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.modal-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  margin-bottom: 24px;
+}
+
+.m-sec { }
+.m-sec-title {
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.m-field { margin-bottom: 12px; }
+.m-field-lbl { font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--faint); margin-bottom: 3px; }
+.m-field-val { font-size: 12px; color: var(--muted); }
+.m-field-val.bright { color: var(--text); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 10px;
+  border: 1px solid;
+  letter-spacing: 0.05em;
+}
+
+.chip.yes { border-color: rgba(122,196,160,0.3); color: var(--green); }
+.chip.no  { border-color: var(--border); color: var(--faint); }
+
+.m-scores { }
+.m-score-row { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.m-score-nm { font-size: 13px; color: var(--muted); width: 140px; flex-shrink: 0; }
+.m-score-trk { flex: 1; height: 1px; background: var(--border); position: relative; }
+.m-score-fill {
+  position: absolute; left: 0; top: -1px; height: 3px;
+  background: var(--accent);
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.m-score-n { font-size: 15px; font-family: 'Outfit', sans-serif; color: var(--text); width: 32px; text-align: right; }
+.m-score-conf { font-size: 11px; color: rgba(232,228,221,0.35); width: 56px; text-align: right; letter-spacing: 0.06em; }
+
+.m-reasoning {
+  font-size: 12px;
+  color: rgba(232,228,221,0.5);
+  line-height: 1.75;
+  padding: 12px 14px;
+  border-left: 1px solid var(--border2);
+  margin-bottom: 16px;
+}
+
+.m-summary {
+  font-size: 13px;
+  color: rgba(232,228,221,0.6);
+  line-height: 1.75;
+}
+
+.m-foot {
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: rgba(232,228,221,0.35);
+}
+
+.m-foot span { color: rgba(232,228,221,0.6); }
+
+/* ── TH INFO HEADERS ─────────────────────────────── */
+.info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  font-size: 11px;
+  color: rgba(232,228,221,0.28);
+  cursor: pointer;
+  transition: color 0.15s;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.info-btn:hover { color: var(--accent); }
+
+.info-card {
+  display: none;
+  position: fixed;
+  width: 300px;
+  background: #1c2228;
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 18px 20px;
+  z-index: 9999;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.85);
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+.info-card.visible {
+  display: block;
+  animation: fadeIn 0.15s ease;
+}
+
+.info-card-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  white-space: normal;
+}
+
+.info-weight {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 400;
+  background: rgba(154,179,194,0.1);
+  border: 1px solid rgba(154,179,194,0.2);
+  padding: 2px 8px;
+  flex-shrink: 0;
+}
+
+.info-card-body {
+  font-size: 12px;
+  color: rgba(232,228,221,0.55);
+  line-height: 1.8;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 300;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* ── TD SUMMARY & DIM SCORE ──────────────────────── */
+.td-name {
+  color: var(--text);
+  font-weight: 400;
+  margin-bottom: 3px;
+}
+
+.td-summary {
+  font-size: 11px;
+  color: rgba(232,228,221,0.35);
+  font-weight: 300;
+  line-height: 1.5;
+  max-width: 260px;
+  white-space: normal;
+  letter-spacing: 0;
+}
+
+.aum-cell {
+  font-size: 12px;
+  color: rgba(232,228,221,0.5);
+  font-family: 'IBM Plex Mono', monospace;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dim-score {
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  color: rgba(232,228,221,0.6);
+  font-weight: 300;
+}
+
+/* ── SCORE BREAKDOWN ─────────────────────────────── */
+.score-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 0;
+}
+
+/* ── RUNS ────────────────────────────────────────── */
+
+/* ── LOADING / EMPTY ─────────────────────────────── */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  gap: 10px;
+  color: var(--faint);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+
+.spin {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--border2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: rot 0.7s linear infinite;
+}
+
+@keyframes rot { to { transform: rotate(360deg); } }
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+  gap: 8px;
+  color: var(--faint);
+  text-align: center;
+}
+
+.empty-t {
+  font-family: 'Outfit', sans-serif;
+  font-size: 22px;
+  font-weight: 300;
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+.empty-s { font-size: 11px; max-width: 280px; line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <a class="logo" href="#" onclick="navigate('dashboard')">
+      <span class="logo-name">PaceZero</span>
+    </a>
+    <div class="logo-div"></div>
+    <span class="logo-sub">LP Intelligence</span>
+
+    <div class="topbar-right">
+      <div class="status-live">
+        <div class="live-dot"></div>
+        Live
+      </div>
+      <div class="topbar-run" id="topbar-run">Last run <b>—</b></div>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="nav-group">
+      <div class="nav-label">Overview</div>
+      <button class="nav-item active" onclick="navigate('dashboard')">Dashboard</button>
+      <button class="nav-item" onclick="navigate('prospects')">
+        Prospects
+        <span class="nav-count" id="nav-count">—</span>
+      </button>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">Analytics</div>
+      <button class="nav-item" onclick="navigate('breakdown')">Score Breakdown</button>
+      <button class="nav-item" onclick="navigate('runs')">Run History</button>
+    </div>
+
+    <div class="sidebar-foot">
+      <div class="cost-lbl">Total API Cost</div>
+      <div class="cost-val" id="sidebar-cost">$0.00</div>
+      <div class="cost-sub" id="sidebar-tokens">— tokens</div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-hed">
+        <div class="page-title">LP <em>Intelligence</em></div>
+        <div class="page-sub">Fund II fundraising · enrichment & scoring pipeline</div>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi">
+          <div class="kpi-lbl">Total Prospects</div>
+          <div class="kpi-val a" id="stat-total">—</div>
+          <div class="kpi-sub">across all tiers</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-lbl">Avg Composite</div>
+          <div class="kpi-val" id="stat-avg-composite">—</div>
+          <div class="kpi-sub">out of 10.0</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-lbl">Avg Sector Fit</div>
+          <div class="kpi-val a" id="stat-avg-sector">—</div>
+          <div class="kpi-sub">weighted average</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-lbl">Avg Halo Value</div>
+          <div class="kpi-val b" id="stat-avg-halo">—</div>
+          <div class="kpi-sub">brand signal score</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-lbl">Avg Emerging Fit</div>
+          <div class="kpi-val g" id="stat-avg-emerging">—</div>
+          <div class="kpi-sub">emerging mgr appetite</div>
+        </div>
+      </div>
+
+      <div class="tiers-row">
+        <div class="tier-card p">
+          <div class="tier-head"><div class="tier-pip"></div><div class="tier-name">Priority Close</div></div>
+          <div class="tier-num" id="tier-priority">—</div>
+          <div class="tier-track"><div class="tier-fill" id="tbar-priority" style="width:0%"></div></div>
+        </div>
+        <div class="tier-card s">
+          <div class="tier-head"><div class="tier-pip"></div><div class="tier-name">Strong Fit</div></div>
+          <div class="tier-num" id="tier-strong">—</div>
+          <div class="tier-track"><div class="tier-fill" id="tbar-strong" style="width:0%"></div></div>
+        </div>
+        <div class="tier-card m">
+          <div class="tier-head"><div class="tier-pip"></div><div class="tier-name">Moderate Fit</div></div>
+          <div class="tier-num" id="tier-moderate">—</div>
+          <div class="tier-track"><div class="tier-fill" id="tbar-moderate" style="width:0%"></div></div>
+        </div>
+        <div class="tier-card w">
+          <div class="tier-head"><div class="tier-pip"></div><div class="tier-name">Weak Fit</div></div>
+          <div class="tier-num" id="tier-weak">—</div>
+          <div class="tier-track"><div class="tier-fill" id="tbar-weak" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <div class="three-col">
+        <div class="panel">
+          <div class="panel-head">Score Distribution</div>
+          <div class="panel-body">
+            <div class="bar-rows" id="score-dist"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">By Region</div>
+          <div class="panel-body">
+            <div class="bar-rows" id="region-bars"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">By Org Type</div>
+          <div class="panel-body">
+            <div class="bar-rows" id="orgtype-bars"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="top-table-wrap">
+        <div class="panel-head" style="padding:14px 20px;border-bottom:1px solid var(--border)">Top 10 Prospects</div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:32px">#</th>
+              <th>Contact</th>
+              <th>Organization</th>
+              <th>Type</th>
+              <th>Score</th>
+              <th>Tier</th>
+            </tr>
+          </thead>
+          <tbody id="top-table-body">
+            <tr><td colspan="6"><div class="loading"><div class="spin"></div> Loading</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PROSPECTS -->
+    <div class="page" id="page-prospects">
+      <div class="page-hed">
+        <div class="page-title">All <em>Prospects</em></div>
+        <div class="page-sub">Full enriched & scored prospect list</div>
+      </div>
+
+      <div class="toolbar">
+        <div class="s-wrap">
+          <span class="s-ico">⌕</span>
+          <input class="s-inp" id="search-input" placeholder="Search contacts, orgs, roles…" oninput="onSearch()">
+        </div>
+        <select class="f-sel" id="filter-tier" onchange="applyFilters()">
+          <option value="">All Tiers</option>
+          <option value="PRIORITY CLOSE">Priority Close</option>
+          <option value="STRONG FIT">Strong Fit</option>
+          <option value="MODERATE FIT">Moderate Fit</option>
+          <option value="WEAK FIT">Weak Fit</option>
+        </select>
+        <select class="f-sel" id="filter-region" onchange="applyFilters()">
+          <option value="">All Regions</option>
+        </select>
+        <select class="f-sel" id="filter-org" onchange="applyFilters()">
+          <option value="">All Org Types</option>
+        </select>
+        <button class="btn-clear" onclick="clearFilters()">Clear</button>
+      </div>
+
+      <div class="t-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="sortBy('contact_name')">Contact <span id="sort-contact_name"></span></th>
+              <th onclick="sortBy('organization')">Organization <span id="sort-organization"></span></th>
+              <th>Type</th>
+              <th>Region</th>
+              <th onclick="sortBy('composite_score')">Score <span id="sort-composite_score">↓</span></th>
+              <th onclick="sortBy('sector_fit_score')">Sector <button class="info-btn" onclick="event.stopPropagation();showInfo(event,'info-sector')">ⓘ</button> <span id="sort-sector_fit_score"></span></th>
+              <th onclick="sortBy('halo_value_score')">Halo <button class="info-btn" onclick="event.stopPropagation();showInfo(event,'info-halo')">ⓘ</button> <span id="sort-halo_value_score"></span></th>
+              <th onclick="sortBy('emerging_fit_score')">Emerging <button class="info-btn" onclick="event.stopPropagation();showInfo(event,'info-emerging')">ⓘ</button> <span id="sort-emerging_fit_score"></span></th>
+              <th onclick="sortBy('relationship_depth_score')">Rel. <button class="info-btn" onclick="event.stopPropagation();showInfo(event,'info-rel')">ⓘ</button> <span id="sort-relationship_depth_score"></span></th>
+              <th>Tier</th>
+            </tr>
+          </thead>
+          <tbody id="prospects-tbody">
+            <tr><td colspan="10"><div class="loading"><div class="spin"></div> Loading</div></td></tr>
+          </tbody>
+        </table>
+        <div class="pager">
+          <div class="pager-info">Showing <b id="page-showing">—</b> of <b id="page-total">—</b></div>
+          <div class="pager-btns" id="page-controls"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BREAKDOWN -->
+    <div class="page" id="page-breakdown">
+      <div class="page-hed">
+        <div class="page-title">Score <em>Breakdown</em></div>
+        <div class="page-sub">Detailed scoring analytics across all dimensions</div>
+      </div>
+      <div class="score-grid">
+        <div class="panel">
+          <div class="panel-head">Average Scores by Dimension</div>
+          <div class="panel-body"><div class="bar-rows" id="dim-scores"></div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">Top Orgs by Sector Fit</div>
+          <div class="panel-body"><div class="bar-rows" id="top-sector"></div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">Top Orgs by Halo Value</div>
+          <div class="panel-body"><div class="bar-rows" id="top-halo"></div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">Top Orgs by Emerging Fit</div>
+          <div class="panel-body"><div class="bar-rows" id="top-emerging"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RUNS -->
+    <div class="page" id="page-runs">
+      <div class="page-hed">
+        <div class="page-title">Run <em>History</em></div>
+        <div class="page-sub">Pipeline execution log and cost tracking</div>
+      </div>
+      <div class="t-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Run ID</th>
+              <th>Started</th>
+              <th>Finished</th>
+              <th>Processed</th>
+              <th>Cached</th>
+              <th>Tokens In</th>
+              <th>Tokens Out</th>
+              <th>Cost</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="runs-tbody">
+            <tr><td colspan="9"><div class="loading"><div class="spin"></div> Loading</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- INFO CARD PORTAL -->
+<div id="info-sector" class="info-card">
+  <div class="info-card-title">Sector &amp; Mandate Fit <span class="info-weight">35%</span></div>
+  <div class="info-card-body">Does this entity's investment mandate align with PaceZero's sustainability-focused private credit strategy? An ideal prospect allocates capital into funds and has both a credit/lending allocation AND a sustainability/impact mandate. GPs, lenders, and service providers score very low — only true LPs score high.</div>
+</div>
+<div id="info-halo" class="info-card">
+  <div class="info-card-title">Halo &amp; Strategic Value <span class="info-weight">20%</span></div>
+  <div class="info-card-body">Would winning this LP send a strong signal that attracts other LPs to PaceZero? High-halo LPs have strong brand recognition, institutional credibility, or are viewed as validators by other allocators in the market.</div>
+</div>
+<div id="info-emerging" class="info-card">
+  <div class="info-card-title">Emerging Manager Fit <span class="info-weight">15%</span></div>
+  <div class="info-card-body">Does this LP show structural appetite for backing a Fund I / Fund II or otherwise emerging manager like PaceZero? Looks for dedicated emerging manager programs, first-time fund mandates, or track record of backing new GPs.</div>
+</div>
+<div id="info-rel" class="info-card">
+  <div class="info-card-title">Relationship Depth <span class="info-weight">30%</span></div>
+  <div class="info-card-body">Pre-computed from CRM data. Derived from lifecycle stage, notes count, deal associations, and recency of contact. Reflects how warm the existing relationship is — not enriched by AI.</div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bd" id="modal-backdrop" onclick="closeModal(event)">
+  <div class="modal" id="modal-content">
+    <div class="modal-top">
+      <div>
+        <div class="modal-name" id="m-name">—</div>
+        <div class="modal-org" id="m-org">—</div>
+      </div>
+      <button class="modal-x" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────
+let currentPage = 'dashboard';
+let currentSort = { col: 'composite_score', dir: 'desc' };
+let currentOffset = 0;
+const PAGE_SIZE = 25;
+let searchTimeout = null;
+let statsCache = null;
+
+// ── NAV ────────────────────────────────────────────
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick')?.includes(page)) n.classList.add('active');
+  });
+  currentPage = page;
+  if (page === 'prospects') loadProspects();
+  if (page === 'breakdown') loadBreakdown();
+  if (page === 'runs') loadRuns();
+}
+
+// ── API ────────────────────────────────────────────
+async function api(path) {
+  try {
+    const r = await fetch('/api' + path);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  } catch (e) {
+    console.error('API error:', path, e);
+    return null;
+  }
+}
+
+// ── DASHBOARD ──────────────────────────────────────
+async function loadDashboard() {
+  const data = await api('/stats');
+  if (!data) { showEmpty(); return; }
+  statsCache = data;
+
+  const avgs = data.avg_scores || {};
+  document.getElementById('stat-total').textContent          = data.total || 0;
+  document.getElementById('stat-avg-composite').textContent  = fmt1(avgs.avg_composite);
+  document.getElementById('stat-avg-sector').textContent     = fmt1(avgs.avg_sector);
+  document.getElementById('stat-avg-halo').textContent       = fmt1(avgs.avg_halo);
+  document.getElementById('stat-avg-emerging').textContent   = fmt1(avgs.avg_emerging);
+
+  const tiers = {};
+  (data.tier_counts || []).forEach(t => tiers[t.tier] = t.count);
+  const total = data.total || 1;
+
+  document.getElementById('tier-priority').textContent  = tiers['PRIORITY CLOSE'] || 0;
+  document.getElementById('tier-strong').textContent    = tiers['STRONG FIT'] || 0;
+  document.getElementById('tier-moderate').textContent  = tiers['MODERATE FIT'] || 0;
+  document.getElementById('tier-weak').textContent      = tiers['WEAK FIT'] || 0;
+  document.getElementById('nav-count').textContent      = data.total || 0;
+
+  setTimeout(() => {
+    document.getElementById('tbar-priority').style.width  = pct(tiers['PRIORITY CLOSE']||0, total);
+    document.getElementById('tbar-strong').style.width    = pct(tiers['STRONG FIT']||0, total);
+    document.getElementById('tbar-moderate').style.width  = pct(tiers['MODERATE FIT']||0, total);
+    document.getElementById('tbar-weak').style.width      = pct(tiers['WEAK FIT']||0, total);
+  }, 80);
+
+  // Score dist
+  const dist = data.score_distribution || [];
+  const maxD = Math.max(...dist.map(d => d.count), 1);
+  document.getElementById('score-dist').innerHTML = dist.map(d => `
+    <div class="bar-item dist">
+      <div class="bar-lbl dist-lbl">${d.bucket}</div>
+      <div class="bar-track h"><div class="bar-track-fill" style="width:${(d.count/maxD*100).toFixed(0)}%; opacity:0.55; background:${bucketColor(d.bucket)}"></div></div>
+      <div class="bar-num">${d.count}</div>
+    </div>`).join('');
+
+  // Region
+  const regions = (data.by_region || []).slice(0, 8);
+  document.getElementById('region-bars').innerHTML = regions.map(r => `
+    <div class="bar-item region">
+      <div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span class="bar-lbl">${esc(r.region||'Unknown')}</span>
+          <span class="bar-num a">${fmt1(r.avg_score)}</span>
+        </div>
+        <div class="bar-track"><div class="bar-track-fill thin" style="width:${((r.avg_score||0)/10*100).toFixed(0)}%"></div></div>
+      </div>
+    </div>`).join('');
+
+  // Org type
+  const orgs = (data.by_org_type || []).slice(0, 8);
+  document.getElementById('orgtype-bars').innerHTML = orgs.map(o => `
+    <div class="bar-item region">
+      <div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span class="bar-lbl">${esc(o.org_type||'Unknown')}</span>
+          <span class="bar-num" style="color:var(--blue)">${fmt1(o.avg_score)}</span>
+        </div>
+        <div class="bar-track"><div class="bar-track-fill thin" style="width:${((o.avg_score||0)/10*100).toFixed(0)}%; background:var(--blue)"></div></div>
+      </div>
+    </div>`).join('');
+
+  // Top 10
+  const tbody = document.getElementById('top-table-body');
+  const top = data.top_prospects || [];
+  if (!top.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-t">No prospects yet</div><div class="empty-s">Run the pipeline to populate this dashboard.</div></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = top.map((p, i) => `
+    <tr>
+      <td style="color:var(--faint)">${i+1}</td>
+      <td class="primary">${esc(p.contact_name)}</td>
+      <td class="org">${esc(p.organization)}</td>
+      <td style="color:rgba(232,228,221,0.45)">${esc(p.org_type||'—')}</td>
+      <td><span class="s-pill ${sCls(p.composite_score)}">${fmt1(p.composite_score)}</span></td>
+      <td>${badge(p.tier)}</td>
+    </tr>`).join('');
+
+  // Cost
+  const rc = data.run_cost || {};
+  if (rc.total_cost_usd !== undefined) {
+    document.getElementById('sidebar-cost').textContent = '$' + (rc.total_cost_usd||0).toFixed(4);
+    const tok = ((rc.total_tokens_in||0)+(rc.total_tokens_out||0)).toLocaleString();
+    document.getElementById('sidebar-tokens').textContent = tok + ' tokens';
+  }
+  if (rc.started_at) {
+    const d = new Date(rc.started_at);
+    document.getElementById('topbar-run').innerHTML = `Last run <b>${d.toLocaleDateString()}</b>`;
+  }
+}
+
+function showEmpty() {
+  document.getElementById('top-table-body').innerHTML = `
+    <tr><td colspan="6"><div class="empty">
+      <div class="empty-t">No data yet</div>
+      <div class="empty-s">Run <code>python main.py data/challenge_contacts.csv</code> to populate.</div>
+    </div></td></tr>`;
+}
+
+// ── PROSPECTS ──────────────────────────────────────
+async function loadProspects() {
+  const params = buildParams();
+  const data = await api('/prospects?' + params);
+  if (!data) return;
+
+  if (document.getElementById('filter-region').options.length === 1) {
+    const f = await api('/filters');
+    if (f) { populateSelect('filter-region', f.regions); populateSelect('filter-org', f.org_types); }
+  }
+  renderProspects(data.prospects || [], data.total || 0);
+}
+
+function buildParams() {
+  const p = new URLSearchParams();
+  p.set('sort', currentSort.col);
+  p.set('dir', currentSort.dir);
+  p.set('limit', PAGE_SIZE);
+  p.set('offset', currentOffset);
+  const s = document.getElementById('search-input').value.trim();
+  const t = document.getElementById('filter-tier').value;
+  const r = document.getElementById('filter-region').value;
+  const o = document.getElementById('filter-org').value;
+  if (s) p.set('search', s);
+  if (t) p.set('tier', t);
+  if (r) p.set('region', r);
+  if (o) p.set('org_type', o);
+  return p.toString();
+}
+
+function renderProspects(prospects, total) {
+  const tbody = document.getElementById('prospects-tbody');
+  document.getElementById('page-total').textContent = total;
+  const start = currentOffset + 1;
+  const end = Math.min(currentOffset + prospects.length, total);
+  document.getElementById('page-showing').textContent = total ? `${start}–${end}` : '0';
+
+  if (!prospects.length) {
+    tbody.innerHTML = `<tr><td colspan="11"><div class="empty"><div class="empty-t">No results</div><div class="empty-s">Try adjusting your filters.</div></div></td></tr>`;
+    renderPager(total);
+    return;
+  }
+
+  tbody.innerHTML = prospects.map(p => `
+    <tr onclick="openModal(${p.id})">
+      <td class="primary">
+        <div class="td-name">${esc(p.contact_name)}</div>
+        ${p.enrichment_summary ? `<div class="td-summary">${esc(p.enrichment_summary.slice(0,90))}${p.enrichment_summary.length>90?'…':''}</div>` : ''}
+      </td>
+      <td class="org" title="${esc(p.organization)}">${esc(p.organization)}</td>
+      <td style="color:rgba(232,228,221,0.45)">${esc(p.org_type||'—')}</td>
+      <td style="color:rgba(232,228,221,0.45)">${esc(p.region||'—')}</td>
+      <td><span class="s-pill ${sCls(p.composite_score)}">${fmt1(p.composite_score)}</span></td>
+      <td><span class="dim-score">${fmt1(p.sector_fit_score)}</span></td>
+      <td><span class="dim-score">${fmt1(p.halo_value_score)}</span></td>
+      <td><span class="dim-score">${fmt1(p.emerging_fit_score)}</span></td>
+      <td><span class="dim-score">${fmt1(p.relationship_depth_score)}</span></td>
+      <td>${badge(p.tier)}</td>
+    </tr>`).join('');
+
+  renderPager(total);
+}
+
+function renderPager(total) {
+  const pages = Math.ceil(total / PAGE_SIZE);
+  const cur = Math.floor(currentOffset / PAGE_SIZE);
+  const ctrl = document.getElementById('page-controls');
+  let h = `<button class="pager-btn" onclick="gotoPage(${cur-1})" ${cur===0?'disabled':''}>‹</button>`;
+  for (let i = Math.max(0, cur-2); i <= Math.min(pages-1, cur+2); i++) {
+    h += `<button class="pager-btn ${i===cur?'active':''}" onclick="gotoPage(${i})">${i+1}</button>`;
+  }
+  h += `<button class="pager-btn" onclick="gotoPage(${cur+1})" ${cur>=pages-1?'disabled':''}>›</button>`;
+  ctrl.innerHTML = h;
+}
+
+function gotoPage(p) { currentOffset = Math.max(0, p) * PAGE_SIZE; loadProspects(); }
+
+function sortBy(col) {
+  if (currentSort.col === col) currentSort.dir = currentSort.dir === 'desc' ? 'asc' : 'desc';
+  else { currentSort.col = col; currentSort.dir = 'desc'; }
+  document.querySelectorAll('th span[id^="sort-"]').forEach(s => s.textContent = '');
+  const el = document.getElementById('sort-' + col);
+  if (el) el.textContent = currentSort.dir === 'desc' ? '↓' : '↑';
+  currentOffset = 0;
+  loadProspects();
+}
+
+function onSearch() { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { currentOffset = 0; loadProspects(); }, 300); }
+function applyFilters() { currentOffset = 0; loadProspects(); }
+function clearFilters() {
+  ['search-input','filter-tier','filter-region','filter-org'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el.tagName === 'INPUT') el.value = ''; else el.value = '';
+  });
+  currentOffset = 0;
+  loadProspects();
+}
+
+function populateSelect(id, options) {
+  const el = document.getElementById(id);
+  const first = el.options[0];
+  el.innerHTML = '';
+  el.appendChild(first);
+  options.forEach(o => { const opt = document.createElement('option'); opt.value = o; opt.textContent = o; el.appendChild(opt); });
+}
+
+// ── MODAL ──────────────────────────────────────────
+async function openModal(id) {
+  const d = await api('/prospects/' + id);
+  if (!d) return;
+
+  document.getElementById('m-name').textContent = d.contact_name || '—';
+  document.getElementById('m-org').textContent  = [d.organization, d.org_type, d.region].filter(Boolean).join(' · ');
+
+  document.getElementById('modal-body').innerHTML = `
+    <div class="modal-hero">
+      <div class="hero-score">${fmt1(d.composite_score)}</div>
+      <div class="hero-info">
+        <div class="hero-lbl">Composite Score</div>
+        <div class="hero-tier" style="margin-bottom:12px">${badge(d.tier)}</div>
+        <div class="hero-check-lbl">Est. Check Size</div>
+        <div class="hero-check-val">${d.check_size_low && d.check_size_high ? '$'+fmtM(d.check_size_low)+' – $'+fmtM(d.check_size_high) : '—'}</div>
+      </div>
+    </div>
+
+    <div class="modal-cols">
+      <div>
+        <div class="m-sec">
+          <div class="m-sec-title">Contact Details</div>
+          <div class="m-field"><div class="m-field-lbl">Role</div><div class="m-field-val bright">${esc(d.role||'—')}</div></div>
+          <div class="m-field"><div class="m-field-lbl">Email</div><div class="m-field-val" style="color:var(--blue)">${esc(d.email||'—')}</div></div>
+          <div class="m-field"><div class="m-field-lbl">Status</div><div class="m-field-val">${esc(d.contact_status||'—')}</div></div>
+          <div class="m-field"><div class="m-field-lbl">AUM</div><div class="m-field-val">${esc(d.aum_raw||'—')}</div></div>
+          <div class="m-field"><div class="m-field-lbl">Brand Recognition</div><div class="m-field-val">${esc(d.brand_recognition||'—')}</div></div>
+        </div>
+        <div class="m-sec" style="margin-top:20px">
+          <div class="m-sec-title">Enrichment Signals</div>
+          <div class="chips">
+            ${chip('LP', d.is_lp)}
+            ${chip('Sustainability', d.sustainability_mandate)}
+            ${chip('Private Credit', d.private_credit_allocation)}
+            ${chip('Emerging Mgr', d.emerging_manager_program)}
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="m-sec">
+          <div class="m-sec-title">Enrichment Summary</div>
+          <div class="m-summary">${esc(d.enrichment_summary||'No summary available.')}</div>
+          ${d.notable_facts ? `<div class="m-reasoning" style="margin-top:14px">${esc(d.notable_facts)}</div>` : ''}
+        </div>
+      </div>
+    </div>
+
+    <div class="m-sec">
+      <div class="m-sec-title">Score Details</div>
+      ${scoreDet('Sector Fit', d.sector_fit_score, d.sector_fit_reasoning, d.sector_fit_confidence)}
+      ${scoreDet('Halo Value', d.halo_value_score, d.halo_value_reasoning, d.halo_value_confidence)}
+      ${scoreDet('Emerging Fit', d.emerging_fit_score, d.emerging_fit_reasoning, d.emerging_fit_confidence)}
+    </div>
+
+    <div class="m-foot">
+      <span>Data quality: <span>${d.data_quality||'—'}</span></span>
+      <span>Tokens: <span>${(d.tokens_input||0).toLocaleString()} in / ${(d.tokens_output||0).toLocaleString()} out</span></span>
+      <span>Cost: <span style="color:var(--text)">$${(d.cost_usd||0).toFixed(4)}</span></span>
+      <span>Enriched: <span>${d.enriched_at ? new Date(d.enriched_at).toLocaleDateString() : '—'}</span></span>
+    </div>
+  `;
+
+  document.getElementById('modal-backdrop').classList.add('open');
+  setTimeout(() => {
+    document.querySelectorAll('.m-score-fill').forEach(el => {
+      el.style.width = el.getAttribute('data-w') + '%';
+    });
+  }, 50);
+}
+
+function scoreDet(name, score, reasoning, confidence) {
+  const w = ((score||0)/10*100).toFixed(0);
+  return `
+    <div class="m-score-row">
+      <div class="m-score-nm">${name}</div>
+      <div class="m-score-trk"><div class="m-score-fill" data-w="${w}" style="width:0%"></div></div>
+      <div class="m-score-n">${fmt1(score)}</div>
+      <div class="m-score-conf">${confidence||''}</div>
+    </div>
+    ${reasoning ? `<div class="m-reasoning">${esc(reasoning)}</div>` : ''}
+  `;
+}
+
+function closeModal(e) { if (e.target === document.getElementById('modal-backdrop')) closeModalDirect(); }
+function closeModalDirect() { document.getElementById('modal-backdrop').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModalDirect(); });
+
+// ── BREAKDOWN ──────────────────────────────────────
+async function loadBreakdown() {
+  if (!statsCache) statsCache = await api('/stats');
+  if (!statsCache) return;
+
+  const avgs = statsCache.avg_scores || {};
+  const dims = [
+    { label: 'Composite Score',    val: avgs.avg_composite },
+    { label: 'Sector Fit',         val: avgs.avg_sector },
+    { label: 'Relationship Depth', val: avgs.avg_relationship },
+    { label: 'Halo Value',         val: avgs.avg_halo },
+    { label: 'Emerging Fit',       val: avgs.avg_emerging },
+  ];
+
+  document.getElementById('dim-scores').innerHTML = dims.map(d => `
+    <div class="bar-item with-val">
+      <div class="bar-lbl">${d.label}</div>
+      <div class="bar-track"><div class="bar-track-fill thin" style="width:${((d.val||0)/10*100).toFixed(0)}%"></div></div>
+      <div class="bar-num a">${fmt1(d.val)}</div>
+    </div>`).join('');
+
+  const pd = await api('/prospects?sort=sector_fit_score&dir=desc&limit=8');
+  if (pd) renderTopOrgs('top-sector', pd.prospects, 'sector_fit_score', 'var(--accent)');
+
+  const hd = await api('/prospects?sort=halo_value_score&dir=desc&limit=8');
+  if (hd) renderTopOrgs('top-halo', hd.prospects, 'halo_value_score', 'var(--blue)');
+
+  const ed = await api('/prospects?sort=emerging_fit_score&dir=desc&limit=8');
+  if (ed) renderTopOrgs('top-emerging', ed.prospects, 'emerging_fit_score', 'var(--green)');
+}
+
+function renderTopOrgs(elId, prospects, field, color) {
+  const el = document.getElementById(elId);
+  if (!prospects?.length) { el.innerHTML = '<div style="color:rgba(232,228,221,0.45);font-size:12px">No data</div>'; return; }
+  el.innerHTML = prospects.map(p => `
+    <div class="bar-item with-val">
+      <div class="bar-lbl" title="${esc(p.organization)}">${esc(p.organization)}</div>
+      <div class="bar-track"><div class="bar-track-fill thin" style="width:${((p[field]||0)/10*100).toFixed(0)}%; background:${color}"></div></div>
+      <div class="bar-num" style="color:${color}">${fmt1(p[field])}</div>
+    </div>`).join('');
+}
+
+// ── RUNS ───────────────────────────────────────────
+async function loadRuns() {
+  const data = await api('/runs');
+  const tbody = document.getElementById('runs-tbody');
+  if (!data?.length) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty"><div class="empty-t">No runs yet</div></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map(r => `
+    <tr>
+      <td class="run-id">${esc(r.run_id||'—')}</td>
+      <td>${fmtDate(r.started_at)}</td>
+      <td>${fmtDate(r.finished_at)}</td>
+      <td class="primary">${r.processed||0}</td>
+      <td>${r.skipped_cached||0}</td>
+      <td>${(r.total_tokens_in||0).toLocaleString()}</td>
+      <td>${(r.total_tokens_out||0).toLocaleString()}</td>
+      <td class="primary">${r.total_cost_usd != null ? '$'+(r.total_cost_usd||0).toFixed(4) : '—'}</td>
+      <td>${badge(r.status === 'complete' ? 'PRIORITY CLOSE' : 'MODERATE FIT', r.status)}</td>
+    </tr>`).join('');
+}
+
+// ── HELPERS ────────────────────────────────────────
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmt1(v) {
+  if (v === null || v === undefined || isNaN(v)) return '—';
+  return parseFloat(v).toFixed(1);
+}
+
+function fmtM(v) {
+  if (!v) return '—';
+  if (v >= 1e9) return (v/1e9).toFixed(1)+'B';
+  if (v >= 1e6) return (v/1e6).toFixed(1)+'M';
+  if (v >= 1e3) return (v/1e3).toFixed(0)+'K';
+  return v.toFixed(0);
+}
+
+function fmtDate(s) {
+  if (!s) return '—';
+  try {
+    const d = new Date(s);
+    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  } catch { return s; }
+}
+
+function pct(n, total) { return (n/total*100).toFixed(1) + '%'; }
+
+function sCls(s) {
+  if (!s) return '';
+  const n = parseFloat(s);
+  if (n >= 7) return 'hi';
+  if (n >= 5) return 'md';
+  return 'lo';
+}
+
+function tierCls(t) {
+  if (!t) return 'w';
+  if (t.includes('PRIORITY')) return 'p';
+  if (t.includes('STRONG'))   return 's';
+  if (t.includes('MODERATE')) return 'm';
+  return 'w';
+}
+
+function badge(t, overrideLabel) {
+  const cls = tierCls(t);
+  const label = overrideLabel || t || '—';
+  return `<span class="t-badge ${cls}">${esc(label)}</span>`;
+}
+
+function chip(label, val) {
+  const yes = val === true || val === 1;
+  return `<span class="chip ${yes?'yes':'no'}">${yes?'✓':'✗'} ${label}</span>`;
+}
+
+function bucketColor(b) {
+  if (b === '9-10' || b === '8-9') return 'var(--green)';
+  if (b === '7-8') return 'var(--blue)';
+  if (b === '6-7') return 'var(--accent)';
+  return 'var(--faint)';
+}
+
+// ── INFO CARDS ─────────────────────────────────────
+function showInfo(e, id) {
+  const card = document.getElementById(id);
+  const allCards = document.querySelectorAll('.info-card');
+  const wasVisible = card.classList.contains('visible');
+  allCards.forEach(c => c.classList.remove('visible'));
+  if (wasVisible) return;
+
+  const btn = e.currentTarget;
+  const rect = btn.getBoundingClientRect();
+  const cardW = 300;
+  let left = rect.left + rect.width / 2 - cardW / 2;
+  let top = rect.bottom + 10;
+  if (left < 10) left = 10;
+  if (left + cardW > window.innerWidth - 10) left = window.innerWidth - cardW - 10;
+  card.style.left = left + 'px';
+  card.style.top = top + 'px';
+  card.classList.add('visible');
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.info-btn')) {
+    document.querySelectorAll('.info-card.visible').forEach(c => c.classList.remove('visible'));
+  }
+});
+
+// ── INIT ───────────────────────────────────────────
+loadDashboard();
+</script>
+</body>
+</html>
